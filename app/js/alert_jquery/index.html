@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <title>A Clean jQuery AJAX Alert Box Plugin Freebie</title>
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/alertbox.css">
+
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
+    <script src="js/alertbox.js"></script>
+
+    <script>
+        $(function() {
+            
+            $('#clickMe').alertBox({
+                href: 'success.html'
+                // You must add a 
+                // href page (success)
+            });
+        });
+    </script>
+    
+</head>
+<body>
+    <div id="container">
+        <div id="main" role="main">
+            <a href="#" id="clickMe">Click Me</a>
+        </div>
+    </div>
+</body>
+</html>
