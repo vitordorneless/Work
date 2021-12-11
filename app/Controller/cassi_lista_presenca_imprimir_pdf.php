@@ -1,0 +1,75 @@
+<?php
+
+require_once '../../tools/tcpdf/tcpdf.php';
+include '../config/database_mysql.php';
+include '../../class/ayuadame.php';
+require '../Model/Cassi.php';
+require '../Model/Cassi_Agendamento.php';
+require '../Model/Cassi_Agencia.php';
+require '../Model/Medico.php';
+require '../Model/Medicos.php';
+$cassi = new Cassi_Agendamento();
+$cassi_agencias = new Cassi_Agencia();
+$medico = new Medicos();
+$cpfs = filter_input(INPUT_GET, 'cpf', FILTER_SANITIZE_STRING);
+$agencias = filter_input(INPUT_GET, 'agencia', FILTER_SANITIZE_NUMBER_INT);
+$data_medico = $medico->Dados_Medicos_CPF($cpfs);
+$array_cassi_agencias = $cassi_agencias->Dados_Cassi_Agencias_prefixo($agencias);
+$array_cassi_agendamento = $cassi->Dados_Cassi_Agendamentos_lista($array_cassi_agencias['id']);
+$nome_pdf = "Agencia_" . $array_cassi_agencias['prefixo'];
+$table = begin_pdf_TCPDF();
+$table = $table . '<p>PRESTADOR: GRUPO AMA</p>';
+$table = $table . '<h1>LISTA DE PRESENÇA EPS ' . date('Y') . '</h1>';
+$table = $table . '<hr></hr>';
+$table = $table . '<p>Data Visita: ' . $array_cassi_agendamento['data_agendamento'] . ' - Horário: ' . $array_cassi_agendamento['horario'] . '</p>';
+$table = $table . '<p>MÉDICO RESPONSÁVEL: ' . $data_medico['nome'] . '</p>';
+$table = $table . '<p>AGENCIA: ' . $array_cassi_agendamento['municipio'] . '</p>';
+$table = $table . '<table>';
+$table = $table . '<thead>';
+$table = $table . '<tr>';
+$table = $table . '<td width="50%">FUNCIONÁRIO</td>';
+$table = $table . '<td width="5%"><small>FINALIZADO</small></td>';
+$table = $table . '<td width="5%"><small>PENDENTE</small></td>';
+$table = $table . '<td width="5%"><small>NÃO REALIZOU</small></td>';
+$table = $table . '<td width="5%"><small>FUNC. AUSENTE</small></td>';
+$table = $table . '<td width="20%">OBSERVAÇÕES GERAIS</td>';
+$table = $table . '<td width="10%"><small>ASSINATURA</small></td>';
+$table = $table . '</tr>';
+$table = $table . '</thead>';
+$table = $table . '<tfoot>';
+
+$pdo = Database::connect();
+$sql = "select id, nome_ativo from cassi_ativos where prefixo_agencia = $agencias order by nome_ativo asc";
+foreach ($pdo->query($sql) as $value) {
+    $table = $table . '<tr>';
+    $table = $table . '<td width="50%">' . $value['nome_ativo'] . '</td>';
+    $table = $table . '<td width="5%">(  )</td>';
+    $table = $table . '<td width="5%">(  )</td>';
+    $table = $table . '<td width="5%">(  )</td>';
+    $table = $table . '<td width="5%">(  )</td>';
+    $table = $table . '<td width="20%"></td>';
+    $table = $table . '<td width="10%"></td>';
+    $table = $table . '</tr>';
+}
+Database::disconnect();
+$table = $table . '</tfoot></table>';
+$table = $table . end_pdf_TCPDF();
+
+$pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, TRUE, 'UTF-8', FALSE);
+$pdf->SetCreator(PDF_CREATOR);
+$pdf->setHeaderFont(Array(PDF_FONT_NAME_MAIN, '', PDF_FONT_SIZE_MAIN));
+$pdf->setFooterFont(Array(PDF_FONT_NAME_DATA, '', PDF_FONT_SIZE_DATA));
+$pdf->SetDefaultMonospacedFont(PDF_FONT_MONOSPACED);
+$pdf->SetMargins(PDF_MARGIN_LEFT, PDF_MARGIN_TOP, PDF_MARGIN_RIGHT);
+$pdf->SetHeaderMargin(PDF_MARGIN_HEADER);
+$pdf->SetFooterMargin(PDF_MARGIN_FOOTER);
+$pdf->setPrintHeader(false);
+$pdf->setPrintFooter(TRUE);
+$pdf->SetAutoPageBreak(TRUE, PDF_MARGIN_BOTTOM);
+$pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
+$pdf->setFontSubsetting(true);
+$pdf->SetFont('times', '', 12);
+$pdf->AddPage();
+$pdf->writeHTML($table, TRUE, 0, TRUE, 0);
+$pdf->lastPage();
+$pdf->Output('../../uploads/CASSI/lista_presenca/' . $nome_pdf . '.pdf', 'FD');
